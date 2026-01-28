@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://cwbwqb2w0lvy1"]
+
+[ext_resource type="Material" uid="uid://bksmkwhnqhhum" path="res://materials/grid.tres" id="1_2q6dc"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_w7c3h"]
+material = ExtResource("1_2q6dc")
+size = Vector2(128, 128)
+
+[sub_resource type="BoxMesh" id="BoxMesh_w7c3h"]
+material = ExtResource("1_2q6dc")
+size = Vector3(4, 4, 4)
+
+[sub_resource type="SphereMesh" id="SphereMesh_w8frs"]
+material = ExtResource("1_2q6dc")
+radius = 4.0
+height = 8.0
+
+[node name="Level" type="Node3D"]
+
+[node name="Ground" type="MeshInstance3D" parent="."]
+mesh = SubResource("PlaneMesh_w7c3h")
+
+[node name="Cube" type="MeshInstance3D" parent="."]
+transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, -0.8067684, 2.000001, 5.171074)
+mesh = SubResource("BoxMesh_w7c3h")
+skeleton = NodePath("../Sphere")
+
+[node name="Sphere" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4137001, 0, -9.869741)
+mesh = SubResource("SphereMesh_w8frs")
