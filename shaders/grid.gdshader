@@ -18,6 +18,7 @@ group_uniforms Grid;
 uniform vec3 grid_color : source_color = vec3(0.863,0.863,0.863);
 //** Relative size of the grid lines in relation to [grid_size].*/
 uniform float line_width : hint_range(0, 1) = 0.02;
+uniform float roundness : hint_range(0, 1) = 0.1;
 //** Major grid size in meters.*/
 uniform float grid_size = 1;
 
@@ -62,26 +63,48 @@ void vertex() {
 		object_pos = global_pos;
 		object_normal = inv_rotation * NORMAL;
 	}
-	
-	
 }
 
 void fragment() {
 	vec3 unit_cubes = object_pos - floor(object_pos);
 	ALBEDO = unit_cubes.xzy;
 	
-	//ALBEDO = vec3(float((int(object_pos.x)+int(object_pos.y)+int(object_pos.z))%2));
-	int grid_xy = int(floor(object_pos.x) + floor(object_pos.y));
-	int grid_xz = int(floor(object_pos.x) + floor(object_pos.z));
-	int grid_yz = int(floor(object_pos.y) + floor(object_pos.z));
-	//int grid = int(round(object_pos.x) + round(object_pos.y) + round(object_pos.z));
-	//ALBEDO = vec3(float(grid));
-	ALBEDO = vec3(float(grid_xz%2));
+	vec3 grid_pos = object_pos/grid_size;
+	if (grid_size == 0.0) {
+		grid_pos = vec3(0);
+	}
+	grid_pos -= floor(grid_pos);
+	grid_pos *= 2.;
+	grid_pos -= 1.;
+	grid_pos = abs(grid_pos);
+	grid_pos -= (1.-line_width) - (1.-line_width)*roundness;
+	
+	// in the end subtract (line_width*roundness)
+
+	int grid_xy = (min(0., max(grid_pos.x, grid_pos.y)) + length(max(vec2(0.), grid_pos.xy)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
+	int grid_xz = (min(0., max(grid_pos.x, grid_pos.z)) + length(max(vec2(0.), grid_pos.xz)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
+	int grid_yz = (min(0., max(grid_pos.y, grid_pos.z)) + length(max(vec2(0.), grid_pos.yz)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
+	
+	// compute checker pattern
+	vec3 checker_pos = object_pos/checker_size;
+	if (checker_size == 0.0) {
+		checker_pos = vec3(0);
+	}
+	int checker_xy = int(floor(checker_pos.x) + floor(checker_pos.y));
+	int checker_xz = int(floor(checker_pos.x) + floor(checker_pos.z));
+	int checker_yz = int(floor(checker_pos.y) + floor(checker_pos.z));
+	//int checker = int(round(checker_pos.x) + round(checker_pos.y) + round(checker_pos.z));
+	//ALBEDO = vec3(float(checker));
+	ALBEDO = vec3(float(checker_xz%2));
 	
 	//ALBEDO = object_normal;
-
-
-
+	
+	ALBEDO = grid_pos;
+	ALBEDO = vec3(float(grid_xy));
+	ALBEDO = vec3(float(grid_xz));
+	//ALBEDO = vec3(float(grid_yz));
+	
+	
 	ROUGHNESS = roughness;
 	METALLIC = metallic;
 	SPECULAR = specular;
