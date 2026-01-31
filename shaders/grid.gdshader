@@ -118,7 +118,7 @@ void fragment() {
 
 	// #### COMPUTE CHECKER PATTERN ####
 
-	float texture_blending = clamp(length(local_change), 0., 1.);
+	float texture_blending = clamp(length(local_change)/abs(checker_size), 0., 1.);
 
 
 	vec3 checker_pos = object_pos/checker_size;
