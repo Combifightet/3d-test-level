@@ -97,6 +97,11 @@ void fragment() {
 
 	// #### COMPUTE GRID PATTERN ####
 
+	float covered_area = 1. - pow((1.-line_width), 2.); // area of the square border
+	covered_area += (4.-PI) * pow(0.5*(1.-line_width)*roundness, 2.); // are of the rounded corners
+	// Covered area is the average goal value for the smoothing of the grid lines
+	ALBEDO = vec3(covered_area);
+
 
 	vec3 grid_pos = object_pos/grid_size;
 	if (grid_size == 0.0) {
@@ -133,11 +138,10 @@ void fragment() {
 	float max_channel = max(checker_color.r, max(checker_color.g, checker_color.b));
 	vec3 light_color = checker_color * (1. + (1./max_channel-1.)*contrast);
 	vec3 dark_color = checker_color * (1.-contrast);
-	vec3 mid_color = (light_color + dark_color) / 2.;
 	vec3 checker_colored = light_color*float(checker_xz) + dark_color*float(1.-checker_xz);
 
 
-	ALBEDO = grid_color*float(grid_xz) + checker_colored*float(1-grid_xz);
+	//ALBEDO = grid_color*float(grid_xz) + checker_colored*float(1-grid_xz);
 
 	//ALBEDO = dark_color;
 	//ALBEDO = checker_color;
