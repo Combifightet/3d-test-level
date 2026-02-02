@@ -85,6 +85,30 @@ float smooth_checker(vec2 uv, float smoothness) {
 	return clamp(checker/2., 0., 1.);
 }
 
+//** returns a smoothed version of a given (normalized from 0 to 1) sdf*/
+float smooth_grid(float sdf, float zero_point, float avg_val, float smoothness) {
+	// TODO: chose a fixed value for the falloff_exponent maybe just `1.` will suffice
+	// exponential factor so faloff isn't to rapid
+	float factor = pow(E, falloff_exponent*(1./smoothness-1.))-1.; // h(a)
+	
+	// perform a wired interpolation, so that the transition is smoother 
+	float result = pow(sdf, -1./(log2(zero_point))); // f(x)
+	result -= 0.5; // center around 0
+	
+	// convert to a rounded square wave
+	result = (tanh(factor * sin(PI*result)) + 1.);
+	
+	// move goal value from `0.5` to `avg_val`
+	return pow(result, -log2(avg_val));
+}
+
+//    x = sdf
+// ------------------
+//    a = smoothness
+//    n = zero_point
+//  n_y = avg_val
+
+
 void fragment() {
 	vec3 unit_cubes = object_pos - floor(object_pos);
 
@@ -96,6 +120,10 @@ void fragment() {
 
 
 	// #### COMPUTE GRID PATTERN ####
+	
+	float grid_blending = clamp(length(local_change)/abs(line_width*grid_size), 0., 1.);
+	grid_blending = pow(grid_blending, 3.);
+	
 
 	float covered_area = 1. - pow((1.-line_width), 2.); // area of the square border
 	covered_area += (4.-PI) * pow(0.5*(1.-line_width)*roundness, 2.); // are of the rounded corners
@@ -113,17 +141,39 @@ void fragment() {
 	grid_pos = abs(grid_pos);
 	grid_pos -= (1.-line_width) - (1.-line_width)*roundness;
 
-	// in the end subtract (line_width*roundness)
+	vec3 grid = vec3(
+		min(0., max(grid_pos.y, grid_pos.z)) + length(max(vec2(0.), grid_pos.yz)) - ((1.-line_width)*roundness),
+		min(0., max(grid_pos.x, grid_pos.z)) + length(max(vec2(0.), grid_pos.xz)) - ((1.-line_width)*roundness),
+		min(0., max(grid_pos.x, grid_pos.y)) + length(max(vec2(0.), grid_pos.xy)) - ((1.-line_width)*roundness)
+	);
+	
+	float min_dist = line_width-1.;
+	float max_dist = line_width+sqrt(2.) - ((1.-line_width)*roundness);
+	
+	grid -= min_dist;
+	grid /= abs(min_dist) + abs(max_dist);
+	
+	float zero_dist = abs(min_dist) / (abs(min_dist) + abs(max_dist));
+	
+	grid = vec3(
+		// TODO: the `grid_blending` parameter doesn't work as expected
+		smooth_grid(grid.x, zero_dist, covered_area, use_faloff?grid_blending:0.),
+		smooth_grid(grid.y, zero_dist, covered_area, use_faloff?normal_blending:0.),
+		smooth_grid(grid.z, zero_dist, covered_area, use_faloff?grid_blending:0.)
+	);
+	
+	// clamp is propably not needed, since normalisation should do the job
+	grid = clamp(grid, vec3(0.), vec3(1.));
+	
+	ALBEDO = vec3(grid.y);
+	//ALBEDO = vec3(grid.y>zero_dist ? 1. : 0.);
 
-	int grid_xy = (min(0., max(grid_pos.x, grid_pos.y)) + length(max(vec2(0.), grid_pos.xy)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
-	int grid_xz = (min(0., max(grid_pos.x, grid_pos.z)) + length(max(vec2(0.), grid_pos.xz)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
-	int grid_yz = (min(0., max(grid_pos.y, grid_pos.z)) + length(max(vec2(0.), grid_pos.yz)) - ((1.-line_width)*roundness)) > 0. ? 1 : 0;
 
 
 
 	// #### COMPUTE CHECKER PATTERN ####
 
-	float texture_blending = clamp(length(local_change)/abs(checker_size), 0., 1.);
+	float checker_blending = clamp(length(local_change)/abs(checker_size), 0., 1.);
 
 
 	vec3 checker_pos = object_pos/checker_size;
@@ -131,7 +181,7 @@ void fragment() {
 		checker_pos = vec3(0);
 	}
 	int checker_xy = int(floor(checker_pos.x) + floor(checker_pos.y))%2;
-	float checker_xz = smooth_checker(checker_pos.xz, use_faloff ? texture_blending : 0.);
+	float checker_xz = smooth_checker(checker_pos.xz, use_faloff ? checker_blending : 0.);
 	int checker_yz = int(floor(checker_pos.y) + floor(checker_pos.z))%2;
 	//int checker = int(round(checker_pos.x) + round(checker_pos.y) + round(checker_pos.z));
 
@@ -142,11 +192,6 @@ void fragment() {
 
 
 	//ALBEDO = grid_color*float(grid_xz) + checker_colored*float(1-grid_xz);
-
-	//ALBEDO = dark_color;
-	//ALBEDO = checker_color;
-	//ALBEDO = light_color;
-
 
 
 	//ALBEDO = object_normal;

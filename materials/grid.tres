@@ -5,12 +5,12 @@
 [resource]
 render_priority = 0
 shader = ExtResource("1_tdk5q")
-shader_parameter/use_local_pos = true
-shader_parameter/normal_blending = 0.800000038
+shader_parameter/use_local_pos = false
+shader_parameter/normal_blending = 0.8
 shader_parameter/use_faloff = true
-shader_parameter/falloff_exponent = 1.0
+shader_parameter/falloff_exponent = 1.00010004749747
 shader_parameter/grid_color = Color(0.863, 0.863, 0.863, 1)
-shader_parameter/line_width = 0.050000002375
+shader_parameter/line_width = 0.02
 shader_parameter/roundness = 0.1
 shader_parameter/grid_size = 1.0
 shader_parameter/sub_line_width = 0.02
